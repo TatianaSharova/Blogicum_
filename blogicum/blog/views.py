@@ -20,10 +20,10 @@ from .models import Category, Comment, Post
 User = get_user_model()
 
 list_of_posts = Post.objects.select_related(
-        'category', 'author', 'location').filter(
-        is_published=True,
-        category__is_published=True,
-        pub_date__lte=timezone.now())
+    'category', 'author', 'location').filter(
+    is_published=True,
+    category__is_published=True,
+    pub_date__lte=timezone.now())
 
 
 class PostListView(ListView):
@@ -42,7 +42,7 @@ class Posts_CategoryListView(ListView):
     def get_queryset(self):
         return list_of_posts.filter(
             category__slug=self.kwargs['category_slug']
-            ).order_by('-pub_date').annotate(comment_count=Count('comment'))
+        ).order_by('-pub_date').annotate(comment_count=Count('comment'))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -65,7 +65,7 @@ def get_profile(request, username):
         raise Http404('User matching query does not exist')
     posts = Post.objects.select_related(
         'category', 'author', 'location'
-        ).filter(author=profile.pk).order_by(
+    ).filter(author=profile.pk).order_by(
             '-pub_date').annotate(comment_count=Count('comment'))
     paginator = Paginator(posts, 10)
     page_number = request.GET.get('page')
