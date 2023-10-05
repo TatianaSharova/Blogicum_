@@ -66,7 +66,7 @@ def get_profile(request, username):
     posts = Post.objects.select_related(
         'category', 'author', 'location'
     ).filter(author=profile.pk).order_by(
-            '-pub_date').annotate(comment_count=Count('comment'))
+        '-pub_date').annotate(comment_count=Count('comment'))
     paginator = Paginator(posts, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
