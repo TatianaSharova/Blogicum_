@@ -1,6 +1,5 @@
 from typing import Any
 
-from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -8,41 +7,43 @@ from django.core.paginator import Paginator
 from django.db.models import Count
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views.generic import (
-    CreateView, DeleteView, DetailView, ListView, UpdateView
-)
+from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
+                                  UpdateView)
 
 from .forms import CommentForm, PostForm, UserForm
-from .models import Category, Comment, Post
+from .models import Category, Comment, Post, User
 
-User = get_user_model()
+NUMBER_OF_POSTS_ON_PAGE = 10
 
-list_of_posts = Post.objects.select_related(
-    'category', 'author', 'location').filter(
-    is_published=True,
-    category__is_published=True,
-    pub_date__lte=timezone.now())
+
+def get_list_of_posts():
+    """Выводит список отсортированных постов."""
+    return Post.objects.select_related(
+        'category', 'author', 'location').filter(
+        is_published=True,
+        category__is_published=True,
+        pub_date__lte=timezone.now()).order_by(
+        '-pub_date', ).annotate(comment_count=Count('comment'))
 
 
 class PostListView(ListView):
     model = Post
     template_name = 'blog/index.html'
-    ordering = ('-pub_date',)
-    paginate_by = 10
-    queryset = list_of_posts.annotate(comment_count=Count('comment'))
+    paginate_by = NUMBER_OF_POSTS_ON_PAGE
+    queryset = get_list_of_posts()
 
 
-class Posts_CategoryListView(ListView):
+class PostsCategoryListView(ListView):
     model = Post
     template_name = 'blog/category.html'
-    paginate_by = 10
+    paginate_by = NUMBER_OF_POSTS_ON_PAGE
 
     def get_queryset(self):
-        return list_of_posts.filter(
+        return get_list_of_posts().filter(
             category__slug=self.kwargs['category_slug']
-        ).order_by('-pub_date').annotate(comment_count=Count('comment'))
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -141,17 +142,20 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
         return reverse('blog:post_detail', kwargs={'pk': self.object.id})
 
 
-class PostDeleteView(LoginRequiredMixin, DeleteView):
+class DispatchMixin:
+
+    def dispatch(self, request, *args, **kwargs):
+        instance = get_object_or_404(self.model, pk=kwargs[self.pk_url_kwarg])
+        if instance.author != request.user:
+            raise PermissionDenied()
+        return super().dispatch(request, *args, **kwargs)
+
+
+class PostDeleteView(DispatchMixin, LoginRequiredMixin, DeleteView):
     model = Post
     template_name = 'blog/create.html'
     success_url = reverse_lazy('blog:index')
     pk_url_kwarg = 'post_id'
-
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Post, pk=kwargs['post_id'])
-        if instance.author != request.user:
-            raise PermissionDenied()
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
@@ -172,33 +176,19 @@ def add_comment(request, pk):
     return redirect('blog:post_detail', pk=pk)
 
 
-class CommentUpdateView(LoginRequiredMixin, UpdateView):
+class CommentMixin(DispatchMixin):
     model = Comment
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_id'
     fields = ('text',)
 
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Comment, pk=kwargs['comment_id'])
-        if instance.author != request.user:
-            raise PermissionDenied()
-        return super().dispatch(request, *args, **kwargs)
-
     def get_success_url(self):
         return reverse('blog:post_detail', kwargs={'pk': self.object.post.id})
 
 
-class CommentDeleteView(LoginRequiredMixin, DeleteView):
-    model = Comment
-    template_name = 'blog/comment.html'
-    pk_url_kwarg = 'comment_id'
-    fields = ('text',)
+class CommentUpdateView(CommentMixin, LoginRequiredMixin, UpdateView):
+    pass
 
-    def dispatch(self, request, *args, **kwargs):
-        instance = get_object_or_404(Comment, pk=kwargs['comment_id'])
-        if instance.author != request.user:
-            raise PermissionDenied()
-        return super().dispatch(request, *args, **kwargs)
 
-    def get_success_url(self):
-        return reverse('blog:post_detail', kwargs={'pk': self.object.post.id})
+class CommentDeleteView(CommentMixin, LoginRequiredMixin, DeleteView):
+    pass
