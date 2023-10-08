@@ -46,7 +46,7 @@ class CategoryAdmin(admin.ModelAdmin):
 class LocationAdmin(admin.ModelAdmin):
     inlines = (
         PostInline,
-        )
+    )
     list_display = (
         'name',
     )
