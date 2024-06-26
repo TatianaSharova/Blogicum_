@@ -11,11 +11,21 @@ Blogicum - это социальная сеть для публикации ли
 
 Для проекта был написан фронт на HTML.
 
+### **Используемые технологии**
+
+![HTML5](https://a11ybadges.com/badge?logo=html5)
+![Django](https://a11ybadges.com/badge?logo=django)
+![Python](https://a11ybadges.com/badge?logo=python)
+
 ### Локальный запуск проекта:
 
 **_Склонировать репозиторий к себе_**
 ```
 git@github.com:TatianaSharova/blogicum_.git
+```
+**_Создать в корне проекта файл .env и поместить туда SECRET_KEY:_**
+```
+SECRET_KEY = 'ваш secret key'
 ```
 
 **_Создать и активировать виртуальное окружение:_**
