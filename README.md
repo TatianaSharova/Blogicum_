@@ -16,6 +16,7 @@ Blogicum - это социальная сеть для публикации ли
 ![HTML5](https://a11ybadges.com/badge?logo=html5)
 ![Django](https://a11ybadges.com/badge?logo=django)
 ![Python](https://a11ybadges.com/badge?logo=python)
+![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white)
 
 ### Локальный запуск проекта:
 
